@@ -53,6 +53,18 @@
 			<artifactId>commons-validator</artifactId>
 			<version>1.7</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber -->
+		<dependency>
+			<groupId>com.googlecode.libphonenumber</groupId>
+			<artifactId>libphonenumber</artifactId>
+			<version>8.13.18</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+		</dependency>
+
 
 	</dependencies>
 

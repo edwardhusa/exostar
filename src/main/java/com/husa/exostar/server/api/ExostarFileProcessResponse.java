@@ -1,12 +1,13 @@
 package com.husa.exostar.server.api;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
-@NoArgsConstructor
+@AllArgsConstructor
 public class ExostarFileProcessResponse {
 
     private int linesInFile;
