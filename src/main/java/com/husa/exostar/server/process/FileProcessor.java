@@ -6,9 +6,8 @@ import com.google.i18n.phonenumbers.Phonenumber;
 import com.husa.exostar.server.api.ExostarFileProcessResponse;
 import com.husa.exostar.server.data.DatabaseDAO;
 import com.husa.exostar.server.data.record.Users;
+import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.csv.CSVFormat;
@@ -17,9 +16,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
 @Component
 public class FileProcessor {
@@ -32,45 +29,44 @@ public class FileProcessor {
 
   private final CSVFormat csvFormat;
 
-  public FileProcessor(@Value("${file.location.root}") String rootProperty) {
+  public FileProcessor() {
     // Set CSV formatter to clear up surrounding whitespace
     csvFormat =
         CSVFormat.Builder.create(CSVFormat.DEFAULT).setIgnoreSurroundingSpaces(true).build();
   }
 
   /***
-   * Store the values inside a file into the database
-   * @param file File to parse
+   * Store the values from the stream into the database
+   * @param inputStream Data stream
    * @return results of store operation
    */
-  public ExostarFileProcessResponse store(MultipartFile file) {
+  public ExostarFileProcessResponse store(InputStream inputStream) {
 
     int count = 0;
     int parsed = 0;
     List<String> errors = new ArrayList<>();
 
     try {
-      // fail out if file empty
-      if (file.isEmpty()) {
-        errors.add("Failed to store empty file.");
-      } else {
-        try (CSVParser reader =
-            new CSVParser(new InputStreamReader(file.getInputStream()), csvFormat)) {
-          for (CSVRecord record : reader) {
-            List<String> recordErrors = processCSVRecord(record);
+      try (CSVParser reader = new CSVParser(new InputStreamReader(inputStream), csvFormat)) {
+        for (CSVRecord record : reader) {
+          count++;
 
-            count++;
+          List<String> recordErrors = processCSVRecord(record);
 
-            if (!recordErrors.isEmpty()) {
-              errors.addAll(recordErrors);
-            } else {
-              parsed++;
-            }
+          if (!recordErrors.isEmpty()) {
+            errors.addAll(recordErrors);
+          } else {
+            parsed++;
           }
         }
       }
     } catch (Exception e) {
       errors.add("Exception parsing file: " + e);
+    }
+
+    // if no records parsed, throw error
+    if (count == 0) {
+      errors.add("No Records Parsed");
     }
 
     return new ExostarFileProcessResponse(count, parsed, errors);
@@ -80,7 +76,7 @@ public class FileProcessor {
    * Process a line of data coming from the file
    * Format of file: name, phone number, email
    * This assumes that the data coming in has already been whitespace cleared
-   * @param in
+   * @param in  Parsed Data Record
    */
   private List<String> processCSVRecord(CSVRecord in) {
     Users out = new Users();
@@ -126,7 +122,7 @@ public class FileProcessor {
   /**
    * Standardize the input phone number
    *
-   * @param inNumber
+   * @param inNumber Raw Parsed Number
    * @return standardized phone number
    */
   String standardizePhoneNumber(String inNumber) {
@@ -160,12 +156,10 @@ public class FileProcessor {
    *
    * @param phoneNumberString number to validate
    * @return is valid number
-   * @throws NumberParseException
+   * @throws NumberParseException Thrown if there is a critical validation error in the library
    */
   boolean validatePhoneNumber(String phoneNumberString) throws NumberParseException {
-    Phonenumber.PhoneNumber phoneNumber =
-        phoneNumberUtil.parse(
-            phoneNumberString, Phonenumber.PhoneNumber.CountryCodeSource.UNSPECIFIED.name());
+    Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(phoneNumberString, null);
     return phoneNumberUtil.isValidNumber(phoneNumber);
   }
 

@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+
 @RestController
 @CrossOrigin(origins = {"http://localhost:3000"})
 public class ExostarController {
@@ -20,6 +22,10 @@ public class ExostarController {
   // POST a new file with information
   @PostMapping("/upload")
   public ExostarFileProcessResponse uploadFile(@RequestParam("file") MultipartFile file) {
-    return fileProcessor.store(file);
+    try {
+      return fileProcessor.store(file.getInputStream());
+    } catch (IOException ioException) {
+      return new ExostarFileProcessResponse("Failed to parse file: " + ioException);
+    }
   }
 }
